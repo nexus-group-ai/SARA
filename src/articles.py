@@ -25,11 +25,11 @@ def process_raw_article(article):
     result["text"] = article_text
     return result
 
-def create_static_metadata(article, article_path):
+def create_static_metadata(article, filename):
     """
     Create a static metadata dict for the article.
     :param article: The article dict.
-    :param article_path: The path to the article.
+    :param filename: The filename of the article.
     :return: A dict with the metadata.
     """
     article_metadata = {
@@ -38,5 +38,6 @@ def create_static_metadata(article, article_path):
         "author": article["author"],
         "published_at": article["published_at"],
         "words_count": len(article["text"].split(" ")),
+        "filename": filename,
     }
     return article_metadata
