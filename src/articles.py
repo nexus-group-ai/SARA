@@ -12,6 +12,13 @@ def process_raw_article(article):
     result["author"] = content["autor"]
     result["title"] = content["titel"]
 
+    # Extract category
+    try:
+        category = content["category"]["name"]
+    except:
+        category = ""
+    result["category"] = category
+
     # Extract the text from the article
     article_text = ""
     for block in content["inhalt"]["content"]:
@@ -39,5 +46,6 @@ def create_static_metadata(article, filename):
         "published_at": article["published_at"],
         "words_count": len(article["text"].split(" ")),
         "filename": filename,
+        "category": article["category"],
     }
     return article_metadata
