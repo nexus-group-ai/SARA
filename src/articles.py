@@ -19,12 +19,12 @@ def process_raw_article(article):
         category = ""
     result["category"] = category
 
-    # extract ressort
+    # extract sections
     try:
-        ressort = content["category"]["content"]["parent"]
+        sections = content["category"]["content"]["parent"]
     except:
-        ressort = ""
-    result["ressort"] = ressort
+        sections = ""
+    result["sections"] = sections
 
     # Extract the text from the article
     article_text = ""
@@ -54,6 +54,6 @@ def create_static_metadata(article, filename):
         "words_count": len(article["text"].split(" ")),
         "filename": filename,
         "category": article["category"],
-        "ressort": article["ressort"],
+        "sections": article["sections"],
     }
     return article_metadata
