@@ -36,7 +36,7 @@ pip install -r requirements.txt
 
 
 ## 3) Set up API keys
-Copy your teams API key from the [slack]("TODO") channel description and place it in the `.env_template` file.
+Copy your teams API key from the Slack channel description and place it in the `.env_template` file.
 
 Don't forget to replace the filename to `.env` afterwards!
 
@@ -44,17 +44,15 @@ Check out the [sample code](notebooks/getting_started_llms.ipynb) to see how to 
 
 Check out pricing on the OpenRouter model pages (see [below](#change-model-to-use))
 
-*TODO*: Maybe update with OpenRouter overview?
-
 <br>
 
 
 ## 4) Add data
-Download data via the private link in the slack channel.
+Download data via the private link in the Slack channel.
 
 Place the downloaded zip in this repository.
 
-Unzip the data:
+Unzip the data (we recommend to use 7zip or terminal, windows default extraction might be very slow):
 ```bash
 unzip data.zip
 ```
