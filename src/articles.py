@@ -1,3 +1,7 @@
+import re
+from difflib import SequenceMatcher
+from typing import Dict, List
+
 def process_raw_article(article):
     """
     Process the raw article data and extract the relevant information.
@@ -19,7 +23,7 @@ def process_raw_article(article):
         category = ""
     result["category"] = category
 
-    # extract section
+    # Extract section
     try:
         section = content["category"]["content"]["parent"]
     except:
