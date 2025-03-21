@@ -1,6 +1,5 @@
 .env
 data/*
-!data/metadata.csv
 
 # IDE
 .vscode
