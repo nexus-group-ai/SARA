@@ -36,11 +36,11 @@ pip install -r requirements.txt
 
 
 ## 3) Set up API keys
-Copy your teams API key from the Slack channel description and place it in the `.env_template` file.
+Place the `.env` file from your private Slack channel into the repository root.
 
-Don't forget to replace the filename to `.env` afterwards!
+Make sure to rename it to `.env` (without any extension).
 
-Check out the [sample code](notebooks/getting_started_llms.ipynb) to see how to load the key.
+We prepared for you already the LLM [providers clients](src/llm.py), so you should not need to set this up.
 
 Check out pricing on the OpenRouter model pages (see [below](#change-model-to-use))
 
@@ -48,19 +48,20 @@ Check out pricing on the OpenRouter model pages (see [below](#change-model-to-us
 
 
 ## 4) Add data
-Download data via the private link in the Slack channel.
+Download data via the private download link in the Slack channel.
 
 Place the downloaded zip in this repository.
 
-Unzip the data (we recommend to use 7zip or terminal, windows default extraction might be very slow):
+Unzip the data (we recommend to use python, 7zip or terminal, windows default extraction might be very slow):
 ```bash
-unzip data.zip
+uv run python -m zipfile -e data.zip . 
 ```
 
 
 The folder contains:
-- articles_clean: the cleaned articles (using [this script](notebooks/dataset.ipynb)) in json format
-- `metadata.csv`: metadata for the articles, including tags for topics created with zero-shot models (using [this script](notebooks/metadata.ipynb))
+- articles_clean: the cleaned articles (using [this script](notebooks/1_dataset.ipynb)) in json format
+  - the number of articles is >80k, be careful even with simple operations, e.g. file browsing in IDE, it can be too slow
+- `metadata.csv`: metadata for the articles, including tags for topics created with zero-shot models (using [this script](notebooks/2_metadata.ipynb))
 
 > Note: Take the assigned tags with a grain of salt, they are not perfect as they are automatically created.
 
@@ -69,10 +70,12 @@ The folder contains:
 
 ## 5) Get started with developing
 - Collect ideas, goals and approaches
-- Check out and filter the data with [filter_dataset.ipynb](notebooks/filter_dataset.ipynb)
-- Once you created a subset, there is a simple RAG implementation to help you getting started: [getting_started_llms.ipynb](notebooks/getting_started_llms.ipynb).
+- Check out and filter the data with [filter_dataset.ipynb](notebooks/3_filter_dataset.ipynb)
+- Once you created a subset, there is a simple RAG implementation to help you getting started: [getting_started_llms.ipynb](notebooks/4_getting_started_llms.ipynb).
 
 > Note: Feel free to diverge from this approach! This is just a starting point.
+
+> And if you get stuck, please just reach out to us via Slack! We are happy to support :) 
 
 <br>
 
@@ -89,12 +92,12 @@ Info Material:
 
 
 Code samples:
-- Getting started notebook for this challenge (simple RAG pipeline): [llm_rag_demo.ipynb](notebooks/getting_started_llms.ipynb) 
+- Getting started notebook for this challenge (simple RAG pipeline): [llm_rag_demo.ipynb](notebooks/4_getting_started_llms.ipynb) 
 - RAG Techniques collection with sample code: [RAG Techniques GitHub](https://github.com/NirDiamant/RAG_Techniques)
 
 
 ### For token usage control (advanced)
-- *TODO* Ask us for current usage (easiest) 
+- Ask us on Slack for current usage (easiest) 
 - [Extract openAI API token usage](https://help.openai.com/en/articles/6614209-how-do-i-check-my-token-usage) from the response with `response['usage']`.
 - Use [tiktoken](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) to manually count tokens of a string:
 ```bash
