@@ -57,12 +57,15 @@ Unzip the data (we recommend to use python, 7zip or terminal, windows default ex
 uv run python -m zipfile -e data.zip . 
 ```
 
+> Hint: If you are using Pycharm, right click on `data` folder and then `Mark Directory as` -> `Excluded` to speed up the IDE and prevent indexing.
+
 
 The folder contains:
 - articles_clean: the cleaned articles (using [this script](notebooks/1_dataset.ipynb)) in json format
   - the number of articles is >80k, be careful even with simple operations, e.g. file browsing in IDE, it can be too slow
 - `metadata.csv`: metadata for the articles, including tags for topics created with zero-shot models (using [this script](notebooks/2_metadata.ipynb))
-
+  - also very big, don't open in editor/Excel, use pandas or similar
+    
 > Note: Take the assigned tags with a grain of salt, they are not perfect as they are automatically created.
 
 <br>
