@@ -5,11 +5,12 @@ Repository for the AIM Hackathon "Put News Archives to Life" together with Media
 
 > If you get stuck, feel free to call us in the slack channel any time! :)
 
+<br>
 
 ## 1) Fork this repository
 Simply fork this repository to start working on your project.
 
-
+<br>
 
 ## 2) Set up environment
 ### With `uv` 
@@ -31,6 +32,7 @@ conda create -n aim_hackathon_oct24 python=3.13
 pip install -r requirements.txt
 ```
 
+<br>
 
 
 ## 3) Set up API keys
