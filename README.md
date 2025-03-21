@@ -1,5 +1,7 @@
-# AIM Hackathon March 2025 - Getting started
-Repository for the AIM Hackathon "Put News Archives to Life" together with Media Innovation Lab on Sa, 22.03.2025
+# AIM x MIL Hackathon March 2025 - Getting started
+![img](header.png)
+
+Repository for the [AIM](https://ai-mission.eu) Hackathon "Put News Archives to Life" together with [Media Innovation Lab](https://inno-lab.at) on Sa, 22.03.2025
 
 > Note: This repository should make the start easier for you, but is not mandatory to use - feel free to use your own setup!
 
