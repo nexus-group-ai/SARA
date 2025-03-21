@@ -57,6 +57,8 @@ Unzip the data (we recommend to use python, 7zip or terminal, windows default ex
 uv run python -m zipfile -e data.zip . 
 ```
 
+> Hint: If you are using Pycharm, right click on `data` folder and then `Mark Directory as` -> `Excluded` to speed up the IDE and prevent indexing.
+
 
 The folder contains:
 - articles_clean: the cleaned articles (using [this script](notebooks/1_dataset.ipynb)) in json format
