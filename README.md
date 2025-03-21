@@ -8,7 +8,7 @@ Repository for the AIM Hackathon "Put News Archives to Life" together with Media
 <br>
 
 ## 1) Fork this repository
-Simply fork this repository to start working on your project.
+Simply fork this repository and follow the steps below to start working on your project.
 
 <br>
 
