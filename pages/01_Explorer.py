@@ -7,15 +7,12 @@ import numpy as np
 
 # Page configuration
 st.set_page_config(
-    page_title="Archive Explorer",
+    page_title="Explorer",
     page_icon="📰",
     layout="wide"
 )
 
-# Header
-st.markdown('<div class="main-header">Wiener Zeitung Dataset Explorer</div>', unsafe_allow_html=True)
-st.markdown('### AIM x MIL Hackathon - "Put News Archives to Life"')
-st.markdown('This dashboard provides visualizations and insights on the Wiener Zeitung article dataset to help you understand the data for your hackathon project.')
+st.header("Explorer")
 
 # Load Data
 @st.cache_data

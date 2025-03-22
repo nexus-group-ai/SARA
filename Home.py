@@ -195,6 +195,9 @@ def create_sidebar_filters():
     with st.sidebar:
         st.subheader("Filter Articles")
         
+        # Add demo articles checkbox
+        use_demo_articles = st.checkbox("Use demo articles", value=False)
+        
         # Date range filter
         date_range = st.date_input(
             "Date range",
@@ -208,12 +211,27 @@ def create_sidebar_filters():
             st.error("No metadata available")
             return pd.DataFrame()
         
-        # Filter by date
-        start_date, end_date = date_range
-        filtered_metadata = metadata[
-            (metadata["published_at"].dt.date >= start_date) & 
-            (metadata["published_at"].dt.date <= end_date)
-        ].copy()
+        # Filter by demo articles IDs if checked
+        if use_demo_articles:
+            try:
+                # Load the demo article IDs from CSV
+                demo_ids_df = pd.read_csv("rag/ids.csv")
+                if "id" in demo_ids_df.columns:
+                    # Filter metadata to only include articles with IDs in the demo list
+                    filtered_metadata = metadata[metadata["id"].isin(demo_ids_df["id"])]
+                    st.info(f"Filtered to {len(filtered_metadata)} demo articles")
+                else:
+                    st.error("Demo IDs CSV does not have 'id' column")
+                    filtered_metadata = metadata.copy()
+            except Exception as e:
+                st.error(f"Error loading demo IDs: {e}")
+                filtered_metadata = metadata.copy()
+        else:
+            # Apply normal date filtering if not using demo articles
+            filtered_metadata = metadata[
+                (metadata["published_at"].dt.date >= date_range[0]) & 
+                (metadata["published_at"].dt.date <= date_range[1])
+            ].copy()
         
         # Convert timestamps to strings for display
         filtered_metadata['published_date_str'] = filtered_metadata['published_at'].dt.strftime('%Y-%m-%d')
