@@ -214,7 +214,7 @@ def create_sidebar_filters():
         st.subheader("Filter Articles")
         
         # Add demo articles checkbox
-        use_demo_articles = st.checkbox("Use demo articles", value=False)
+        use_demo_articles = st.checkbox("Filter to demo articles", value=False)
         
         # Date range filter
         date_range = st.date_input(
@@ -275,7 +275,7 @@ def create_sidebar_filters():
         
         st.info(f"Found {len(filtered_metadata)} matching articles")
         
-        return filtered_metadata
+        return filtered_metadata, use_demo_articles
 
 def handle_article_selection(filtered_metadata):
     """Handle the article selection process based on filtered metadata."""
@@ -851,7 +851,7 @@ def main():
     setup_sidebar()
     
     # Create and apply filters
-    filtered_metadata = create_sidebar_filters()
+    filtered_metadata, use_demo_articles = create_sidebar_filters()
     
     # Main content area title and language selection
     col1, col2 = st.columns([3, 1])
@@ -918,7 +918,10 @@ def main():
                     display_topic_analysis(st.session_state.topics_data)
         
         with tabs[5]:
-            show_related_tab(client, article_data, load_metadata(), desired_language)
+            if use_demo_articles:
+                show_related_tab(client, article_data, load_metadata(), desired_language)
+            else:
+                st.error("Only available if Filter to Demo Articles is selected")
             
             
         # Display original article
