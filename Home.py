@@ -448,7 +448,7 @@ def main():
     # Main content area title and language selection
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.title("SARA: Text Transformation & Summarization")
+        st.title("SARA: Wiener Zeitung Archive")
     with col2:
         # Put language selection in a more prominent position
         desired_language = st.selectbox(
