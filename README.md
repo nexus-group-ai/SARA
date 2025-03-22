@@ -1,138 +1,220 @@
-# AIM x MIL Hackathon - Getting started
-![img](header.png)
+# SARA - Summarize. Analyze. Retrieve. Annotate
 
-Repository for the [AIM](https://ai-mission.eu) Hackathon "Put News Archives to Life" together with [Media Innovation Lab](https://inno-lab.at) on Sa, 22.03.2025
+![SARA Logo](img/logo_full.png)
 
-> Note: This repository should make the start easier for you, but is not mandatory to use - feel free to use your own setup!
+## Overview
 
-> If you get stuck, feel free to call us in the slack channel any time! :)
+SARA is an intelligent interface that transforms historical news archives into an accessible, searchable knowledge base for both readers and journalists. Built during the AIM x MIL Hackathon "Put News Archives to Life" on March 22, 2025, this platform leverages advanced language models with retrieval-augmented generation to provide deeper context, entity understanding, and content transformation features.
 
-<br>
+## 🎯 Key Features
 
-## 1) Fork this repository
-Simply fork this repository and follow the steps below to start working on your project.
+- **Text Transformation**: Convert articles to different reading levels and styles
+- **Smart Summarization**: Generate summaries of varying lengths and perspectives
+- **Entity Extraction**: Identify people, organizations, locations, and events
+- **Sentiment Analysis**: Analyze the tone and emotional content of articles
+- **Topic Identification**: Extract main topics and themes from articles
+- **Related Articles**: Find semantically similar content using RAG technology
+- **Interactive Dashboard**: Explore article metadata and trends
 
-<br>
+## 📊 Project Structure
 
-## 2) Set up environment
-### With `uv` 
-recommended, [installation guide](https://docs.astral.sh/uv/getting-started/installation/) <br>
--> no conda or other environment required, very easy to use and super fast
-```bash
-uv sync
+```
+├── data/                    # Data directory (not included in repository)
+│   ├── articles_clean/      # Cleaned article JSON files 
+│   └── metadata.csv         # Article metadata
+├── img/                     # Images and logos
+├── notebooks/               # Jupyter notebooks for data exploration
+├── pages/                   # Streamlit pages
+│   └── 01_Explorer.py       # Data exploration dashboard
+├── rag/                     # RAG implementation
+│   ├── ask_rag.py           # Question answering with RAG
+│   ├── create_rag.py        # Vector database creation
+│   └── ids.csv              # Demo article IDs
+├── src/                     # Source code
+│   └── llm.py               # LLM client implementations
+├── .env                     # Environment variables (not in repository)
+├── Home.py                  # Main Streamlit application
+├── Makefile                 # Build and run commands
+└── requirements.txt         # Python dependencies
 ```
 
-Optional: Install new packages similar to pip:
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- API keys for LLM services (OpenAI, OpenRouter)
+- The Wiener Zeitung dataset (obtain from organizers)
+
+### Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/your-username/sara.git
+   cd sara
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   make setup
+   ```
+
+   or manually:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Place your `.env` file with API keys in the project root:
+
+   ```
+   OPENAI_API_KEY=your_key_here
+   OPENROUTER_API_KEY=your_key_here
+   OPENROUTER_API_BASE=https://openrouter.ai/api/v1
+   AZURE_OPENAI_API_KEY=your_key_here
+   AZURE_OPENAI_ENDPOINT=your_endpoint_here
+   MODEL_NAME=openai/gpt-4o
+   ```
+
+4. Prepare the data:
+   - Download the dataset from the provided source
+   - Unzip it in the project root:
+
+     ```bash
+     python -m zipfile -e data.zip .
+     ```
+
+### Running the application
+
+Start the Streamlit app:
+
 ```bash
-uv pip install <package>
+make run
 ```
 
+or manually:
 
-### With [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/windows.html)
 ```bash
-conda create -n aim_hackathon_oct24 python=3.13
-pip install -r requirements.txt
+streamlit run Home.py
 ```
 
-<br>
+### Building the RAG index
 
+To enable the Related Articles feature, you need to build the vector database:
 
-## 3) Set up API keys
-Place the `.env` file from your private Slack channel into the repository root.
-
-Make sure to rename it to `.env` (without any extension).
-
-We prepared for you already the LLM [providers clients](src/llm.py), so you should not need to set this up.
-
-Check out pricing on the OpenRouter model pages (see [below](#change-model-to-use))
-
-<br>
-
-
-## 4) Add data
-Download data via the private download link in the Slack channel.
-
-Place the downloaded zip in this repository.
-
-Unzip the data (we recommend to use python, 7zip or terminal, windows default extraction might be very slow):
 ```bash
-uv run python -m zipfile -e data.zip . 
+make rag
 ```
 
-> Hint: If you are using Pycharm, right click on `data` folder and then `Mark Directory as` -> `Excluded` to speed up the IDE and prevent indexing.
+or manually:
 
-
-The folder contains:
-- articles_clean: the cleaned articles (using [this script](notebooks/1_dataset.ipynb)) in json format
-  - the number of articles is >80k, be careful even with simple operations, e.g. file browsing in IDE, it can be too slow
-- `metadata.csv`: metadata for the articles, including tags for topics created with zero-shot models (using [this script](notebooks/2_metadata.ipynb))
-  - also very big, don't open in editor/Excel, use pandas or similar
-    
-> Note: Take the assigned tags with a grain of salt, they are not perfect as they are automatically created.
-
-<br>
-
-
-## 5) Get started with developing
-- Collect ideas, goals and approaches
-- Check out and filter the data with [filter_dataset.ipynb](notebooks/3_filter_dataset.ipynb)
-- Once you created a subset, there is a simple RAG implementation to help you getting started: [getting_started_llms.ipynb](notebooks/4_getting_started_llms.ipynb).
-
-> Note: Feel free to diverge from this approach! This is just a starting point.
-
-> And if you get stuck, please just reach out to us via Slack! We are happy to support :) 
-
-<br>
-
-
-## Hints
-
-### For the challenge
-Info Material:
-- Basics of RAG [blog post](https://medium.com/@ahmed.mohiuddin.architecture/using-ai-to-chat-with-your-documents-leveraging-langchain-faiss-and-openai-3281acfcc4e9)
-- RAG techniques and sample code [here]()
-- Force LLMs to output e.g. only integers with [Structured outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) (highly recommended)
-- Agentic AI introduction [blog post](https://www.anthropic.com/engineering/building-effective-agents)
-- Prompt caching to reduce token usage [blog post](https://platform.openai.com/docs/guides/prompt-caching)
-
-
-Code samples:
-- Getting started notebook for this challenge (simple RAG pipeline): [llm_rag_demo.ipynb](notebooks/4_getting_started_llms.ipynb) 
-- RAG Techniques collection with sample code: [RAG Techniques GitHub](https://github.com/NirDiamant/RAG_Techniques)
-
-
-### For token usage control (advanced)
-- Ask us on Slack for current usage (easiest) 
-- [Extract openAI API token usage](https://help.openai.com/en/articles/6614209-how-do-i-check-my-token-usage) from the response with `response['usage']`.
-- Use [tiktoken](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) to manually count tokens of a string:
 ```bash
-import tiktoken
-tokenizer = tiktoken.get_encoding("o200k_base")  # for gpt 4o
+python rag/create_rag.py
 ```
 
-<br>
+## 💡 Key Components Explained
 
-## Change model to use (advanced)
+### Home.py (Main Application)
 
-Choose a model from OpenRouter's [model list](https://openrouter.ai/models) and place the model name in the `.env` file.
+This is the main entry point for the Streamlit application. It handles:
 
-We recommend a model of these (click on the link to obtain code to run the model, scroll down):
+- **Article Selection**: Filtering and selecting articles from the dataset
+- **Text Transformation**: Converting articles to different styles and reading levels
+- **Summarization**: Generating different types of article summaries
+- **Entity Analysis**: Extracting and classifying named entities
+- **Sentiment Analysis**: Analyzing article tone and emotion
+- **Topic Analysis**: Identifying main themes and keywords
+- **Related Articles**: Finding semantically similar content
 
-| Name | MODEL_NAME                    | Cost | Comments    |
-| --- |------------------------------------| --- |-------------|
-| [OpenAI 4o](https://openrouter.ai/openai/gpt-4o) | `openai/gpt-4o`                    | 2.5$/M tokens | Recommended |
-| [OpenAI 4o-mini](https://openrouter.ai/openai/gpt-4o-mini) | `openai/gpt-4o-mini`               | 0.15$/M tokens |          |
-| [Google Gemini 2.0 Flash Lite](https://openrouter.ai/google/gemini-2.0-flash-lite-001) | `google/gemini-2.0-flash-lite-001` | 0.075$/M tokens |           |
-| [Anthropic Claude 3.7 Sonnet](https://openrouter.ai/anthropic/claude-3.7-sonnet) | `anthropic/claude-3.7-sonnet`      | $3/M tokens |           |
+Key functions:
 
+- `get_llm_response()`: Sends prompts to the LLM model and handles responses
+- `create_transformation_prompt()`: Creates prompts for text style transformation
+- `create_summary_prompt()`: Creates prompts for different summary types
+- `handle_article_selection()`: Manages the article filtering and selection UI
+- `extract_entities()`: Uses LLM to identify and classify entities in text
+- `analyze_sentiment()`: Determines the sentiment and tone of articles
+- `find_related_articles()`: Uses RAG to find semantically similar articles
 
+### Explorer Dashboard (pages/01_Explorer.py)
 
-Feel free to choose any model from these providers (advanced):
-- OpenAI: https://openrouter.ai/provider/openai
-- Google Vertex: https://openrouter.ai/provider/google-vertex
-- Anthropic: https://openrouter.ai/provider/anthropic
-- Mistral: https://openrouter.ai/provider/mistral
-- Perplexity: https://openrouter.ai/perplexity
-- Nebious: https://openrouter.ai/nebious (for deepseek R1, Qwen, Llama)
+An interactive dashboard for exploring the article dataset with:
 
+- Article distribution by time, section, and category
+- Word count analysis
+- Topic distribution
+- Custom filtering and dataset exploration
 
+### RAG Implementation (rag/)
+
+The Retrieval-Augmented Generation system includes:
+
+- **ask_rag.py**: Query the vector database to find related articles
+- **create_rag.py**: Build the FAISS vector database from article content
+
+Key components:
+
+- `FAISS.from_documents()`: Creates a vector index from document embeddings
+- `RetrievalQA.from_chain_type()`: Builds a question-answering chain using RAG
+- `ask_question()`: Main function to query the RAG system
+
+## 📊 Data Structure
+
+The application works with the Wiener Zeitung dataset, which includes:
+
+- **articles_clean/**: JSON files with article content
+
+  ```json
+  {
+    "id": "unique-id",
+    "title": "Article title",
+    "author": "Author name",
+    "published_at": "2023-01-01",
+    "category": "Category",
+    "section": "Section",
+    "text": "Full article text..."
+  }
+  ```
+
+- **metadata.csv**: Information about all articles
+  - id, filename, published_at, author, title, category, section, word_count
+  - Topic tags (financial_crisis, sustainability, fake_news, ai, etc.)
+
+## 🛠️ Technology Stack
+
+- **LLM Integration**: OpenAI GPT-4o, Claude, Gemini via OpenRouter
+- **Vector Database**: FAISS for efficient similarity search
+- **Backend**: Python/Streamlit
+- **Frontend**: Streamlit with interactive visualizations
+- **Data Processing**: Pandas, LangChain
+- **Visualization**: Plotly
+
+## 🔄 Workflow
+
+1. **Data Selection**: Filter and browse the article archive
+2. **Article Analysis**: Extract insights from selected articles
+3. **Content Transformation**: Convert articles to different formats
+4. **Related Content**: Discover semantically similar articles
+5. **Export**: Download transformed content and summaries
+
+## 🤝 Contributing
+
+This project was developed during a hackathon, but contributions are welcome:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- AIM (AI Impact Mission) and Media Innovation Lab for organizing the hackathon
+- Contributors to the Wiener Zeitung dataset
+- The open-source community behind the libraries used in this project
