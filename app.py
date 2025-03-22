@@ -186,10 +186,10 @@ def main():
             filtered_metadata['published_date_str'] = filtered_metadata['published_at'].dt.strftime('%Y-%m-%d')
             
             # Additional filters
-            categories = ["All"] + sorted(metadata["category"].unique().tolist())
-            selected_category = st.selectbox("Category", categories)
-            if selected_category != "All":
-                filtered_metadata = filtered_metadata[filtered_metadata["category"] == selected_category]
+            sections = ["All"] + sorted(metadata["section"].unique().tolist())
+            selected_section = st.selectbox("Section", sections)
+            if selected_section != "All":
+                filtered_metadata = filtered_metadata[filtered_metadata["section"] == selected_section]
             
             # Topic filter based on tags
             topics = ["All", "financial_crisis", "sustainability", "fake_news", "ai", 
@@ -214,62 +214,63 @@ def main():
     
     # Article selection
     if not filtered_metadata.empty:
-        st.subheader("Select an Article")
-        
-        # Limit the number of articles displayed
-        max_articles_to_display = 1000  # Safety limit
-        too_many_articles = len(filtered_metadata) > max_articles_to_display
-        
-        if too_many_articles:
-            st.warning(f"Found {len(filtered_metadata)} articles. Please use additional filters to narrow down your selection.")
+        with st.sidebar:
+            st.subheader("Select an Article")
             
-            # Additional filtering options to narrow down results
-            col1, col2 = st.columns(2)
+            # Limit the number of articles displayed
+            max_articles_to_display = 1000  # Safety limit
+            too_many_articles = len(filtered_metadata) > max_articles_to_display
             
-            with col1:
-                # Filter by year
-                years = sorted(filtered_metadata['published_at'].dt.year.unique())
-                selected_year = st.selectbox("Select year", ["All"] + list(years))
+            if too_many_articles:
+                st.warning(f"Found {len(filtered_metadata)} articles. Please use additional filters to narrow down your selection.")
                 
-                if selected_year != "All":
-                    filtered_metadata = filtered_metadata[filtered_metadata['published_at'].dt.year == selected_year]
-            
-            with col2:
-                # Filter by month (only if year is selected)
-                if selected_year != "All":
-                    months = sorted(filtered_metadata['published_at'].dt.month.unique())
-                    month_names = ["All"] + [f"{m} - {pd.Timestamp(2000, m, 1).strftime('%B')}" for m in months]
-                    selected_month_option = st.selectbox("Select month", month_names)
+                # Additional filtering options to narrow down results
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Filter by year
+                    years = sorted(filtered_metadata['published_at'].dt.year.unique())
+                    selected_year = st.selectbox("Select year", ["All"] + list(years))
                     
-                    if selected_month_option != "All":
-                        selected_month = int(selected_month_option.split(" - ")[0])
-                        filtered_metadata = filtered_metadata[filtered_metadata['published_at'].dt.month == selected_month]
+                    if selected_year != "All":
+                        filtered_metadata = filtered_metadata[filtered_metadata['published_at'].dt.year == selected_year]
+                
+                with col2:
+                    # Filter by month (only if year is selected)
+                    if selected_year != "All":
+                        months = sorted(filtered_metadata['published_at'].dt.month.unique())
+                        month_names = ["All"] + [f"{m} - {pd.Timestamp(2000, m, 1).strftime('%B')}" for m in months]
+                        selected_month_option = st.selectbox("Select month", month_names)
+                        
+                        if selected_month_option != "All":
+                            selected_month = int(selected_month_option.split(" - ")[0])
+                            filtered_metadata = filtered_metadata[filtered_metadata['published_at'].dt.month == selected_month]
+                
+                # After additional filtering, check if we still have too many articles
+                if len(filtered_metadata) > max_articles_to_display:
+                    # Filter by title search
+                    title_search = st.text_input("Search in title", "")
+                    if title_search:
+                        filtered_metadata = filtered_metadata[filtered_metadata['title'].str.contains(title_search, case=False, na=False)]
             
-            # After additional filtering, check if we still have too many articles
-            if len(filtered_metadata) > max_articles_to_display:
-                # Filter by title search
-                title_search = st.text_input("Search in title", "")
-                if title_search:
-                    filtered_metadata = filtered_metadata[filtered_metadata['title'].str.contains(title_search, case=False, na=False)]
-        
-        # Now show article selection if we have a reasonable number
-        if len(filtered_metadata) > 0 and len(filtered_metadata) <= max_articles_to_display:
-            # Display filtered articles
-            selected_article_idx = st.selectbox(
-                f"Choose from {len(filtered_metadata)} articles:", 
-                range(len(filtered_metadata)),
-                format_func=lambda x: f"{filtered_metadata.iloc[x]['published_date_str']} - {filtered_metadata.iloc[x]['title']}"
-            )
-            
-            selected_article_filename = filtered_metadata.iloc[selected_article_idx]["filename"]
-            article_data = load_article(selected_article_filename)
-        else:
-            if len(filtered_metadata) == 0:
-                st.error("No articles match your current filters. Please adjust your criteria.")
-                article_data = None
+            # Now show article selection if we have a reasonable number
+            if len(filtered_metadata) > 0 and len(filtered_metadata) <= max_articles_to_display:
+                # Display filtered articles
+                selected_article_idx = st.selectbox(
+                    f"Choose from {len(filtered_metadata)} articles:", 
+                    range(len(filtered_metadata)),
+                    format_func=lambda x: f"{filtered_metadata.iloc[x]['published_date_str']} - {filtered_metadata.iloc[x]['title']}"
+                )
+                
+                selected_article_filename = filtered_metadata.iloc[selected_article_idx]["filename"]
+                article_data = load_article(selected_article_filename)
             else:
-                st.info(f"Still too many articles ({len(filtered_metadata)}). Please add more filters to narrow your selection.")
-                article_data = None
+                if len(filtered_metadata) == 0:
+                    st.error("No articles match your current filters. Please adjust your criteria.")
+                    article_data = None
+                else:
+                    st.info(f"Still too many articles ({len(filtered_metadata)}). Please add more filters to narrow your selection.")
+                    article_data = None
         
         if article_data:
             if article_data:
