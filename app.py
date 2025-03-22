@@ -83,10 +83,19 @@ def get_llm_response(client, prompt, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX
         st.session_state.last_prompt = prompt
         st.session_state.last_model = model
         
+        # Determine desired language from prompt
+        language_instruction = ""
+        if "Write your response in English" in prompt:
+            language_instruction = "You must respond in English."
+        elif "Write your response in German" in prompt:
+            language_instruction = "You must respond in German."
+        
+        system_prompt = f"You are SARA, an intelligent assistant for news article analysis. {language_instruction}"
+        
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are SARA, an intelligent assistant for news article analysis."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=max_tokens,
@@ -102,50 +111,63 @@ def get_llm_response(client, prompt, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX
         return "Sorry, I encountered an error while processing your request. Please check the API configuration."
 
 # --- PROMPT TEMPLATES ---
-def create_transformation_prompt(article_text, transformation_type, level=None):
-    """Create a prompt for text transformation based on the selected type and level."""
+# --- UPDATED PROMPT TEMPLATES ---
+def create_transformation_prompt(article_text, transformation_type, level=None, language="English"):
+    """Create a prompt for text transformation based on the selected type, level, and language."""
+    language_instruction = f"Write your response in {language}."
+    
     prompts = {
         "simplify": f"""Transform the following news article into a simpler version at a {level} reading level. 
                      Maintain all key information and main points, but use simpler language and shorter sentences.
+                     {language_instruction}
                      
                      Article: {article_text}""",
                      
         "conversational": f"""Rewrite the following news article in a conversational style, as if explaining it to a friend.
                            Keep all the important information but make it engaging and informal.
+                           {language_instruction}
                            
                            Article: {article_text}""",
                            
         "academic": f"""Transform the following news article into an academic style with formal language.
                      Add depth to the analysis and use appropriate academic tone.
+                     {language_instruction}
                      
                      Article: {article_text}""",
                      
         "youth": f"""Rewrite the following news article for a young audience (age 12-16).
                   Explain concepts clearly, use engaging language, but don't be condescending.
+                  {language_instruction}
                   
                   Article: {article_text}"""
     }
     return prompts.get(transformation_type, "Invalid transformation type")
 
-def create_summary_prompt(article_text, summary_type, length=None):
-    """Create a prompt for article summarization based on the selected type and length."""
+def create_summary_prompt(article_text, summary_type, length=None, language="English"):
+    """Create a prompt for article summarization based on the selected type, length, and language."""
+    language_instruction = f"Write your response in {language}."
+    
     prompts = {
-        "headline": f"""Create a single headline-style summary (10-15 words) of the following news article:
+        "headline": f"""Create a single headline-style summary (10-15 words) of the following news article.
+                      {language_instruction}
                       
                       Article: {article_text}""",
                       
-        "paragraph": f"""Summarize the following news article in one paragraph (3-5 sentences):
+        "paragraph": f"""Summarize the following news article in one paragraph (3-5 sentences).
+                       {language_instruction}
                        
                        Article: {article_text}""",
                        
         "detailed": f"""Provide a detailed summary of the following news article in {length} paragraphs.
                       Include the most important information, key points, and any significant quotes or data.
+                      {language_instruction}
                       
                       Article: {article_text}""",
                       
         "multi-perspective": f"""Analyze the following news article from multiple perspectives.
                               Identify different stakeholder viewpoints mentioned or implied in the article.
                               Present a balanced summary that acknowledges these different perspectives.
+                              {language_instruction}
                               
                               Article: {article_text}"""
     }
@@ -286,8 +308,8 @@ def display_article(article_data):
         st.caption(f"Category: {article_data['category']} | Section: {article_data['section']}")
         st.markdown(article_data["text"].replace("\n", "\n\n"))
 
-def show_text_transformation_tab(client, article_data, selected_article_filename):
-    """Display the text transformation features tab."""
+def show_text_transformation_tab(client, article_data, selected_article_filename, desired_language):
+    """Display the text transformation features tab with language support."""
     st.subheader("Adapt Reading Style")
     transformation_type = st.selectbox(
         "Select transformation type:",
@@ -303,9 +325,14 @@ def show_text_transformation_tab(client, article_data, selected_article_filename
         )
     
     if st.button("Transform Text", key="transform_button"):
-        with st.spinner("Transforming text..."):
+        with st.spinner(f"Transforming text in {desired_language}..."):
             try:
-                prompt = create_transformation_prompt(article_data["text"], transformation_type, level)
+                prompt = create_transformation_prompt(
+                    article_data["text"], 
+                    transformation_type, 
+                    level, 
+                    language=desired_language
+                )
                 transformed_text = get_llm_response(client, prompt)
                 st.markdown(transformed_text)
                 
@@ -313,15 +340,15 @@ def show_text_transformation_tab(client, article_data, selected_article_filename
                 st.download_button(
                     label="Download transformed text",
                     data=transformed_text,
-                    file_name=f"transformed_{selected_article_filename.replace('.json', '')}.txt",
+                    file_name=f"transformed_{selected_article_filename.replace('.json', '')}_{desired_language.lower()}.txt",
                     mime="text/plain"
                 )
             except Exception as e:
                 st.error(f"Error transforming text: {e}")
                 st.session_state.api_error = True
 
-def show_summarization_tab(client, article_data, selected_article_filename):
-    """Display the summarization features tab."""
+def show_summarization_tab(client, article_data, selected_article_filename, desired_language):
+    """Display the summarization features tab with language support."""
     st.subheader("Summarization")
     summary_type = st.selectbox(
         "Select summary type:",
@@ -334,9 +361,14 @@ def show_summarization_tab(client, article_data, selected_article_filename):
         length = st.slider("Number of paragraphs", 1, 5, 2)
     
     if st.button("Generate Summary", key="summary_button"):
-        with st.spinner("Generating summary..."):
+        with st.spinner(f"Generating {desired_language} summary..."):
             try:
-                prompt = create_summary_prompt(article_data["text"], summary_type, length)
+                prompt = create_summary_prompt(
+                    article_data["text"], 
+                    summary_type, 
+                    length, 
+                    language=desired_language
+                )
                 summary = get_llm_response(client, prompt)
                 st.markdown(summary)
                 
@@ -344,7 +376,7 @@ def show_summarization_tab(client, article_data, selected_article_filename):
                 st.download_button(
                     label="Download summary",
                     data=summary,
-                    file_name=f"summary_{selected_article_filename.replace('.json', '')}.txt",
+                    file_name=f"summary_{selected_article_filename.replace('.json', '')}_{desired_language.lower()}.txt",
                     mime="text/plain"
                 )
             except Exception as e:
@@ -375,6 +407,33 @@ def show_troubleshooting_info():
             st.session_state.api_error = False
             st.rerun()
 
+def display_language_indicator(desired_language):
+    """Display a prominent indicator of the currently selected output language."""
+    language_colors = {
+        "English": "purple",
+        "German": "green"
+    }
+    
+    color = language_colors.get(desired_language, "gray")
+    
+    st.markdown(
+        f"""
+        <div style="
+            padding: 5px 10px; 
+            border-radius: 5px; 
+            background-color: {color}25; 
+            border: 1px solid {color}; 
+            display: inline-block;
+            margin-bottom: 10px;
+            ">
+            <span style="color: {color}; font-weight: bold;">
+                ⚙️ Output will be in {desired_language}
+            </span>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
 # --- MAIN APP FUNCTION ---
 def main():
     """Main function to run the Streamlit app."""
@@ -387,32 +446,37 @@ def main():
     # Create and apply filters
     filtered_metadata = create_sidebar_filters()
     
-    # Main content area title
-    st.title("SARA: Wiener Zeitung Archive Analysis")
+    # Main content area title and language selection
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.title("SARA: Wiener Zeitung Archive Analysis")
+    with col2:
+        # Put language selection in a more prominent position
+        desired_language = st.selectbox(
+            "Output Language",
+            ["English", "German"],
+            index=0,
+            format_func=lambda x: x.capitalize()
+        )
     
     # Handle article selection
     article_data, selected_article_filename = handle_article_selection(filtered_metadata)
     
-    # Make language selection between English/German using segmented_control
-    desired_language = st.selectbox(
-        "Select Language",
-        ["English", "German"],
-        index=0,
-        format_func=lambda x: x.capitalize()
-    )
-    
     # If we have an article selected, display it and feature tabs
     if article_data:
+        # Display language indicator
+        display_language_indicator(desired_language)
+        
         # Feature tabs
         tab1, tab2 = st.tabs(["Style", "Summarization"])
         
-        # Text Transformation features
+        # Text Transformation features - pass the desired language
         with tab1:
-            show_text_transformation_tab(client, article_data, selected_article_filename)
+            show_text_transformation_tab(client, article_data, selected_article_filename, desired_language)
         
-        # Summarization features  
+        # Summarization features - pass the desired language
         with tab2:
-            show_summarization_tab(client, article_data, selected_article_filename)
+            show_summarization_tab(client, article_data, selected_article_filename, desired_language)
             
         # Display original article
         display_article(article_data)
