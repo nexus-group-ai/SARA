@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 import openai
 from datetime import datetime
+import plotly.express as px
+import plotly.graph_objects as go
 
 # --- CONSTANTS & CONFIGURATION ---
 IMG_PATH_LOGO_FULL = "img/logo_full.png"
@@ -50,6 +52,13 @@ def initialize_app():
         st.session_state.last_model = ""
     if 'api_error' not in st.session_state:
         st.session_state.api_error = False
+        # Initialize session state for this page
+    if 'analysis_prompt' not in st.session_state:
+        st.session_state.analysis_prompt = ""
+    if 'analysis_result' not in st.session_state:
+        st.session_state.analysis_result = ""
+    if 'entities' not in st.session_state:
+        st.session_state.entities = {}
     
     return client
 
@@ -382,6 +391,287 @@ def show_summarization_tab(client, article_data, selected_article_filename, desi
                 st.error(f"Error generating summary: {e}")
                 st.session_state.api_error = True
 
+# --- ANALYSIS FUNCTIONS ---
+def extract_entities(client, article_text):
+    """Extract named entities from the article text using LLM."""
+    prompt = f"""Extract all named entities from the following article text and classify them by type. 
+    Return the results as a JSON object with the following structure:
+    {{
+        "people": ["Name 1", "Name 2", ...],
+        "organizations": ["Org 1", "Org 2", ...],
+        "locations": ["Location 1", "Location 2", ...],
+        "events": ["Event 1", "Event 2", ...],
+        "dates": ["Date 1", "Date 2", ...],
+        "other": ["Other entity 1", "Other entity 2", ...]
+    }}
+    
+    Article text:
+    {article_text}
+    
+    Output only valid JSON, with no additional text before or after.
+    """
+    
+    try:
+        response = get_llm_response(client, prompt, max_tokens=1500, temperature=0.1)
+        # Extract just the JSON part if there's surrounding text
+        json_start = response.find('{')
+        json_end = response.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            json_str = response[json_start:json_end]
+            entities = json.loads(json_str)
+            return entities
+        else:
+            st.error("Could not extract valid JSON from the model response.")
+            return {}
+    except Exception as e:
+        st.error(f"Error extracting entities: {e}")
+        return {}
+
+def analyze_sentiment(client, article_text):
+    """Analyze the sentiment and tone of the article."""
+    prompt = f"""Analyze the sentiment and tone of the following article. Provide:
+    1. Overall sentiment (positive, negative, neutral, or mixed)
+    2. Emotional tone (e.g., optimistic, pessimistic, alarmist, hopeful, etc.)
+    3. A brief explanation of your analysis
+    4. A sentiment score from -1.0 (very negative) to 1.0 (very positive)
+    
+    Format your response as a JSON object with the following structure:
+    {{
+        "sentiment": "positive/negative/neutral/mixed",
+        "tone": "descriptive tone",
+        "explanation": "brief explanation",
+        "score": 0.0
+    }}
+    
+    Article text:
+    {article_text}
+    
+    Output only valid JSON, with no additional text.
+    """
+    
+    try:
+        response = get_llm_response(client, prompt, max_tokens=1000, temperature=0.2)
+        # Extract just the JSON part if there's surrounding text
+        json_start = response.find('{')
+        json_end = response.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            json_str = response[json_start:json_end]
+            sentiment_data = json.loads(json_str)
+            return sentiment_data
+        else:
+            st.error("Could not extract valid JSON from the model response.")
+            return {}
+    except Exception as e:
+        st.error(f"Error analyzing sentiment: {e}")
+        return {}
+
+def identify_main_topics(client, article_text):
+    """Identify the main topics and themes in the article."""
+    prompt = f"""Identify the main topics and themes discussed in the following article.
+    Return the results as a JSON object with the following structure:
+    {{
+        "main_topic": "The primary subject of the article",
+        "subtopics": ["Subtopic 1", "Subtopic 2", ...],
+        "keywords": ["Keyword 1", "Keyword 2", ...],
+        "categories": ["Category 1", "Category 2", ..."],
+        "summary": "A brief 1-2 sentence summary of the main point"
+    }}
+    
+    Article text:
+    {article_text}
+    
+    Output only valid JSON, with no additional text.
+    """
+    
+    try:
+        response = get_llm_response(client, prompt, max_tokens=1000, temperature=0.3)
+        # Extract just the JSON part if there's surrounding text
+        json_start = response.find('{')
+        json_end = response.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            json_str = response[json_start:json_end]
+            topics_data = json.loads(json_str)
+            return topics_data
+        else:
+            st.error("Could not extract valid JSON from the model response.")
+            return {}
+    except Exception as e:
+        st.error(f"Error identifying topics: {e}")
+        return {}
+
+def display_entity_table(entities):
+    """Display entities in a table format."""
+    if not entities:
+        st.warning("No entities detected in the article.")
+        return
+    
+    # Custom CSS for entity tags
+    st.markdown("""
+    <style>
+    .entity-tag {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 4px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    .person { background-color: rgba(31, 119, 180, 0.2); border: 1px solid rgba(31, 119, 180, 0.8); }
+    .organization { background-color: rgba(255, 127, 14, 0.2); border: 1px solid rgba(255, 127, 14, 0.8); }
+    .location { background-color: rgba(44, 160, 44, 0.2); border: 1px solid rgba(44, 160, 44, 0.8); }
+    .event { background-color: rgba(214, 39, 40, 0.2); border: 1px solid rgba(214, 39, 40, 0.8); }
+    .date { background-color: rgba(148, 103, 189, 0.2); border: 1px solid rgba(148, 103, 189, 0.8); }
+    .other { background-color: rgba(140, 86, 75, 0.2); border: 1px solid rgba(140, 86, 75, 0.8); }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Create columns for each entity type
+    cols = st.columns(3)
+    
+    entity_labels = {
+        'people': 'People', 
+        'organizations': 'Organizations', 
+        'locations': 'Locations',
+        'events': 'Events', 
+        'dates': 'Dates', 
+        'other': 'Other'
+    }
+    
+    entity_classes = {
+        'people': 'person', 
+        'organizations': 'organization', 
+        'locations': 'location',
+        'events': 'event', 
+        'dates': 'date', 
+        'other': 'other'
+    }
+    
+    # Display entities in columns
+    for i, (entity_type, label) in enumerate(entity_labels.items()):
+        col_idx = i % 3
+        with cols[col_idx]:
+            st.subheader(label)
+            if entity_type in entities and entities[entity_type]:
+                entity_html = ""
+                for entity in entities[entity_type]:
+                    css_class = entity_classes.get(entity_type, 'other')
+                    entity_html += f'<span class="entity-tag {css_class}">{entity}</span> '
+                st.markdown(entity_html, unsafe_allow_html=True)
+            else:
+                st.write("None detected")
+
+def display_sentiment_gauge(sentiment_data):
+    """Display a gauge chart for sentiment score."""
+    if not sentiment_data or 'score' not in sentiment_data:
+        st.warning("No sentiment data available.")
+        return
+    
+    score = sentiment_data.get('score', 0)
+    
+    # Create gauge chart
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=score,
+        title={'text': "Sentiment Score"},
+        gauge={
+            'axis': {'range': [-1, 1]},
+            'bar': {'color': "darkblue"},
+            'steps': [
+                {'range': [-1, -0.6], 'color': "firebrick"},
+                {'range': [-0.6, -0.2], 'color': "salmon"},
+                {'range': [-0.2, 0.2], 'color': "lightgray"},
+                {'range': [0.2, 0.6], 'color': "lightgreen"},
+                {'range': [0.6, 1], 'color': "forestgreen"}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': score
+            }
+        }
+    ))
+    
+    fig.update_layout(height=250)
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Display sentiment details
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info(f"**Overall Sentiment**: {sentiment_data.get('sentiment', 'N/A')}")
+    with col2:
+        st.info(f"**Emotional Tone**: {sentiment_data.get('tone', 'N/A')}")
+    
+    st.markdown(f"**Analysis**: {sentiment_data.get('explanation', 'No explanation provided.')}")
+
+def display_topic_analysis(topics_data):
+    """Display topic analysis results."""
+    if not topics_data or 'main_topic' not in topics_data:
+        st.warning("No topic data available.")
+        return
+    
+    st.subheader("Topic Analysis")
+    st.markdown(f"**Main Topic**: {topics_data.get('main_topic', 'N/A')}")
+    st.markdown(f"**Summary**: {topics_data.get('summary', 'No summary available.')}")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Subtopics**")
+        subtopics = topics_data.get('subtopics', [])
+        if subtopics:
+            for topic in subtopics:
+                st.markdown(f"- {topic}")
+        else:
+            st.write("No subtopics identified")
+    
+    with col2:
+        st.markdown("**Keywords**")
+        keywords = topics_data.get('keywords', [])
+        if keywords:
+            # Display as pills/tags
+            keyword_html = ""
+            for keyword in keywords:
+                keyword_html += f'<span style="background-color: #e0f7fa; padding: 3px 8px; margin: 2px; border-radius: 12px; font-size: 14px; display: inline-block;">{keyword}</span> '
+            st.markdown(keyword_html, unsafe_allow_html=True)
+        else:
+            st.write("No keywords identified")
+    
+    # Categories as a horizontal bar chart if available
+    categories = topics_data.get('categories', [])
+    if categories:
+        st.markdown("**Categories**")
+        # Create a simple horizontal chart with equal values
+        df_cat = pd.DataFrame({
+            'category': categories,
+            'value': [1] * len(categories)  # Equal weight for visualization
+        })
+        
+        fig = px.bar(
+            df_cat, 
+            y='category', 
+            x='value',
+            orientation='h',
+            labels={'category': '', 'value': ''},
+            height=min(100 + len(categories) * 30, 400)
+        )
+        fig.update_layout(showlegend=False)
+        fig.update_traces(marker_color='skyblue')
+        fig.update_xaxes(showticklabels=False, showgrid=False)
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+def show_entities_tab(client, article_data):
+    st.subheader("Entity Extraction")
+    st.write("Identify and classify named entities mentioned in the article.")
+    
+    if st.button("Extract Entities", key="extract_entities_btn"):
+        with st.spinner("Extracting entities..."):
+            entities = extract_entities(client, article_data["text"])
+            st.session_state.entities = entities
+    
+    # Display entities if available
+    if st.session_state.entities:
+        display_entity_table(st.session_state.entities)
+
 def show_troubleshooting_info():
     """Display API error troubleshooting information."""
     with st.expander("API Troubleshooting", expanded=True):
@@ -467,15 +757,48 @@ def main():
         display_language_indicator(desired_language)
         
         # Feature tabs
-        tab1, tab2 = st.tabs(["Style", "Summarization"])
+        tabs = st.tabs(["Style", "Summarize", "Entities", "Sentiment", "Topic"])
         
         # Text Transformation features - pass the desired language
-        with tab1:
+        with tabs[0]:
             show_text_transformation_tab(client, article_data, selected_article_filename, desired_language)
         
         # Summarization features - pass the desired language
-        with tab2:
+        with tabs[1]:
             show_summarization_tab(client, article_data, selected_article_filename, desired_language)
+            
+        # Entity Extraction features
+        with tabs[2]:
+            show_entities_tab(client, article_data)
+        
+        # Sentiment Analysis features
+        with tabs[3]:
+            st.subheader("Sentiment Analysis")
+            st.write("Analyze the sentiment and tone of the article.")
+            
+            if st.button("Analyze Sentiment", key="analyze_sentiment_btn"):
+                with st.spinner("Analyzing sentiment..."):
+                    sentiment_data = analyze_sentiment(client, article_data["text"])
+                    st.session_state.sentiment_data = sentiment_data
+                
+                # Display sentiment analysis if available
+                if st.session_state.sentiment_data:
+                    display_sentiment_gauge(st.session_state.sentiment_data)
+        
+        # Topic Identification features
+        with tabs[4]:
+            st.subheader("Topic Identification")
+            st.write("Identify the main topics and themes in the article.")
+            
+            if st.button("Identify Topics", key="identify_topics_btn"):
+                with st.spinner("Identifying topics..."):
+                    topics_data = identify_main_topics(client, article_data["text"])
+                    st.session_state.topics_data = topics_data
+                
+                # Display topic analysis if available
+                if st.session_state.topics_data:
+                    display_topic_analysis(st.session_state.topics_data)
+            
             
         # Display original article
         display_article(article_data)
