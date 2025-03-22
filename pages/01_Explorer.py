@@ -379,39 +379,6 @@ if df is not None:
         # Display sample of filtered data
         st.dataframe(filtered_df[['title', 'published_at', 'author', 'category', 'section', 'word_count']].head(100), use_container_width=True)
         
-        # Export code
-        st.markdown('<div class="sub-header">Export Filtered Dataset</div>', unsafe_allow_html=True)
-        st.write("Use the following code to create this filtered dataset:")
-        
-        export_code = """
-# Python code to filter the dataset
-filtered_metadata = metadata[
-"""
-        export_conditions = []
-        
-        # Add date conditions
-        export_code += f"    (metadata['published_at'] >= '{start_date.strftime('%Y-%m-%d')}') & \n"
-        export_code += f"    (metadata['published_at'] <= '{end_date.strftime('%Y-%m-%d')}') & \n"
-        
-        # Add section condition
-        if selected_section != 'All':
-            export_code += f"    (metadata['section'] == '{selected_section}') & \n"
-        
-        # Add category condition
-        if selected_category != 'All':
-            export_code += f"    (metadata['category'] == '{selected_category}') & \n"
-        
-        # Add tag condition
-        if selected_filter_tag != 'None':
-            export_code += f"    (metadata['{selected_filter_tag}'] > {tag_filter_value}) & \n"
-        
-        # Add word count condition
-        export_code += f"    (metadata['word_count'] >= {word_count_range[0]}) & \n"
-        export_code += f"    (metadata['word_count'] <= {word_count_range[1]})\n"
-        
-        export_code += "]"
-        
-        st.code(export_code, language="python")
         
         # Statistics
         st.markdown('<div class="sub-header">Filtered Dataset Statistics</div>', unsafe_allow_html=True)

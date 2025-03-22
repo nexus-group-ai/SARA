@@ -15,7 +15,7 @@ ARTICLES_CLEAN_DIR = "data/articles_clean"
 METADATA_PATH = "data/metadata.csv"
 
 # Default model settings
-DEFAULT_MODEL = "openai/gpt-4o-mini"
+DEFAULT_MODEL = "openai/gpt-4o"
 DEFAULT_TEMPERATURE = 0.7
 DEFAULT_MAX_TOKENS = 1024
 MAX_ARTICLES_TO_DISPLAY = 1000  # Safety limit
@@ -219,7 +219,7 @@ def create_sidebar_filters():
         # Date range filter
         date_range = st.date_input(
             "Date range",
-            [datetime(2010, 1, 1), datetime(2023, 6, 30)],
+            [datetime(1997, 1, 1), datetime(2024, 1, 1)],
             format="YYYY-MM-DD",
         )
         
@@ -809,7 +809,6 @@ def show_related_tab(client, article_data, metadata_df, desired_language):
                 
                 # Display source documents
                 if sources:
-                    st.markdown("### Source Articles")
                     for i, source in enumerate(sources, 1):
                         with st.expander(f"{i}. {source.get('title', 'Untitled')} - {source.get('published_at', 'Unknown date')}"):
                             st.markdown(f"**Author:** {source.get('author', 'Unknown')}")
