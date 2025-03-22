@@ -28,7 +28,8 @@ if not load_dotenv():
 
 ARTICLES_CLEAN_DIR = os.path.join("..", "data", "articles_clean")
 FILTERED_METADATA_PATH = os.path.join("..", "data", "filtered_metadata.csv")
-DB_PATH = os.path.join("ai_topic.db")
+DB_PATH = os.path.join("rag", "ai_topic.db")
+
 
 if not os.path.exists(DB_PATH):
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -101,9 +102,13 @@ def ask_question(query):
         query = "Es geht um das 'Smart Home', das 'intelligente Heim' und wie man in Zukunft wohnen wollen soll"
     if query == 'sample3':
         query = 'Pünktlich zur Internationalen Orchideen- und Tillandsienschau der Blumengärten Hirschstetten wartet der Botanische Garten der Universität Wien mit einer kleinen Sensation auf'
+    
     response = retrieval_chain.invoke({"query": query})
+    
+    # Print for debugging if needed but also return full response
     print(f"Question: Could you find articles that are related to this quote and summarize them: {query}?\nAnswer: {response['result']}")
     print("\nSources: \n")
     for source in response["source_documents"]:
         print(source.metadata)
+    
     return response

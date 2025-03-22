@@ -20,6 +20,20 @@ DEFAULT_TEMPERATURE = 0.7
 DEFAULT_MAX_TOKENS = 1024
 MAX_ARTICLES_TO_DISPLAY = 1000  # Safety limit
 
+import sys
+
+# Add path for importing RAG modules
+module_path = os.path.abspath(os.path.join('.'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
+# Try to import RAG functionality
+try:
+    from rag.ask_rag import ask_question, DB_PATH
+    RAG_AVAILABLE = os.path.exists(DB_PATH)
+except ImportError:
+    RAG_AVAILABLE = False
+
 # --- INITIALIZATION ---
 def initialize_app():
     """Initialize the app, load environment variables, and set up OpenAI client."""
@@ -59,6 +73,10 @@ def initialize_app():
         st.session_state.analysis_result = ""
     if 'entities' not in st.session_state:
         st.session_state.entities = {}
+    if 'related_articles' not in st.session_state:
+        st.session_state.related_articles = []
+    if 'related_articles_response' not in st.session_state:
+        st.session_state.related_articles_response = ""
     
     return client
 
@@ -741,6 +759,88 @@ def display_language_indicator(desired_language):
         unsafe_allow_html=True
     )
 
+def find_related_articles(article_text):
+    """Find related articles using the RAG pipeline."""
+    
+    if not RAG_AVAILABLE:
+        return "RAG functionality is not available. Please check if the vector database exists.", []
+    
+    query = article_text[:500]  # Use the first 500 chars
+    
+    try:
+        # Call the RAG pipeline
+        response = ask_question(query)
+        
+        # Extract source documents information
+        sources = []
+        if "source_documents" in response:
+            for doc in response["source_documents"]:
+                sources.append(doc.metadata)
+        
+        return response["result"], sources
+    except Exception as e:
+        st.error(f"Error finding related articles: {e}")
+        return f"An error occurred: {str(e)}", []
+
+# New related tab UI function
+def show_related_tab(client, article_data, metadata_df, desired_language):
+    """Display the related articles tab with RAG functionality."""
+    st.subheader("Related Articles")
+    
+    if not RAG_AVAILABLE:
+        st.warning("RAG functionality is not available. Please check if the vector database exists at 'rag/ai_topic.db'.")
+        st.info("To enable this feature, first run the 'rag/create_rag.py' script to build the vector database.")
+        return
+    
+    # Execute search
+    if st.button("Find Related Articles", key="find_related_button"):
+        with st.spinner("Searching for related articles..."):
+            try:
+                response, sources = find_related_articles(
+                    article_data["text"]
+                )
+                
+                # Save results to session state
+                st.session_state.related_articles_response = response
+                st.session_state.related_articles = sources
+                
+                # Display response
+                st.markdown("### Search Results")
+                
+                # Display source documents
+                if sources:
+                    st.markdown("### Source Articles")
+                    for i, source in enumerate(sources, 1):
+                        with st.expander(f"{i}. {source.get('title', 'Untitled')} - {source.get('published_at', 'Unknown date')}"):
+                            st.markdown(f"**Author:** {source.get('author', 'Unknown')}")
+                            st.markdown(f"**Published:** {source.get('published_at', 'Unknown')}")
+                            st.markdown(f"**ID:** {source.get('id', 'Unknown')}")
+                            
+                            # Add button to load the full article
+                            if st.button(f"Load full article", key=f"load_source_{i}"):
+                                source_id = source.get('id')
+                                if source_id and not metadata_df.empty:
+                                    matching_rows = metadata_df[metadata_df['id'] == source_id]
+                                    if not matching_rows.empty:
+                                        filename = matching_rows.iloc[0]['filename']
+                                        source_article = load_article(filename)
+                                        if source_article:
+                                            st.subheader(source_article["title"])
+                                            st.markdown(source_article["text"].replace("\n", "\n\n"))
+                                        else:
+                                            st.error("Could not load the article.")
+                                    else:
+                                        st.error("Article not found in metadata.")
+                                else:
+                                    st.error("Article ID not available or metadata not loaded.")
+                else:
+                    st.info("No source articles found.")
+                
+            except Exception as e:
+                st.error(f"Error finding related articles: {e}")
+                st.session_state.api_error = True
+
+
 # --- MAIN APP FUNCTION ---
 def main():
     """Main function to run the Streamlit app."""
@@ -775,7 +875,7 @@ def main():
         display_language_indicator(desired_language)
         
         # Feature tabs
-        tabs = st.tabs(["Style", "Summarize", "Entities", "Sentiment", "Topic"])
+        tabs = st.tabs(["Style", "Summarize", "Entities", "Sentiment", "Topic", "Related"])
         
         # Text Transformation features - pass the desired language
         with tabs[0]:
@@ -816,6 +916,9 @@ def main():
                 # Display topic analysis if available
                 if st.session_state.topics_data:
                     display_topic_analysis(st.session_state.topics_data)
+        
+        with tabs[5]:
+            show_related_tab(client, article_data, load_metadata(), desired_language)
             
             
         # Display original article
