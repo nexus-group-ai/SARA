@@ -4,10 +4,6 @@ import json
 import os
 from dotenv import load_dotenv
 import openai
-from langchain_openai import OpenAI
-import time
-import re
-from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -17,40 +13,29 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 openrouter_api_base = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
 
+# Variables
+MODEL = "openai/gpt-4o-mini"
+TEMPERATURE = 0.7
+
 # Set up OpenAI client with OpenRouter
 client = openai.OpenAI(
     api_key=openrouter_api_key,
     base_url=openrouter_api_base
 )
 
+IMG_PATH_LOGO_FULL = "img/logo_full.png"
+IMG_PATH_LOGO_ICON = "img/logo_icon.png"
+
 # Configure page
 st.set_page_config(
-    page_title="SARA - Article Analysis Tool", 
+    page_title="SARA | Nexus Group AI", 
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    page_icon=IMG_PATH_LOGO_ICON
 )
 
-# Add custom CSS for better UI
-st.markdown("""
-<style>
-    .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
-    h1, h2, h3 {
-        margin-top: 0.5rem;
-        margin-bottom: 1rem;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 1rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 3rem;
-        white-space: pre-wrap;
-        border-radius: 4px 4px 0 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+with st.sidebar:
+    st.logo(image=IMG_PATH_LOGO_FULL, link="https://nexus-group.ai", icon_image=IMG_PATH_LOGO_ICON, size = "large")
 
 # Define paths
 ARTICLES_CLEAN_DIR = "data/articles_clean"
@@ -174,14 +159,8 @@ def main():
         st.markdown("---")
         
         # Model selection
-        st.subheader("Model Settings")
-        model = st.selectbox(
-            "Select LLM Model",
-            ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-3-haiku-20240307"]
-        )
-        temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
-        
-        st.markdown("---")
+        model = MODEL
+        temperature = TEMPERATURE
         
         # Filtering options
         st.subheader("Filter Articles")
