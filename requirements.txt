@@ -16,3 +16,4 @@ sentence-transformers
 faiss-cpu
 langchain-openai
 python-dotenv
+streamlit
