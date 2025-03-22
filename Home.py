@@ -59,20 +59,31 @@ def initialize_app():
         page_icon=IMG_PATH_LOGO_ICON
     )
     
-    # Initialize session state
+    # Initialize session state for persistent data across tabs
     if 'last_prompt' not in st.session_state:
         st.session_state.last_prompt = ""
     if 'last_model' not in st.session_state:
         st.session_state.last_model = ""
     if 'api_error' not in st.session_state:
         st.session_state.api_error = False
-        # Initialize session state for this page
+        
+    # Initialize session state for analysis outputs
     if 'analysis_prompt' not in st.session_state:
         st.session_state.analysis_prompt = ""
     if 'analysis_result' not in st.session_state:
         st.session_state.analysis_result = ""
+        
+    # Initialize session state for tab-specific outputs
+    if 'transformed_text' not in st.session_state:
+        st.session_state.transformed_text = None
+    if 'summary_text' not in st.session_state:
+        st.session_state.summary_text = None
     if 'entities' not in st.session_state:
         st.session_state.entities = {}
+    if 'sentiment_data' not in st.session_state:
+        st.session_state.sentiment_data = {}
+    if 'topics_data' not in st.session_state:
+        st.session_state.topics_data = {}
     if 'related_articles' not in st.session_state:
         st.session_state.related_articles = []
     if 'related_articles_response' not in st.session_state:
@@ -301,6 +312,18 @@ def handle_article_selection(filtered_metadata):
             )
             
             selected_article_filename = filtered_metadata.iloc[selected_article_idx]["filename"]
+            
+            # Clear outputs when a new article is selected
+            if 'current_article' not in st.session_state or st.session_state.current_article != selected_article_filename:
+                st.session_state.current_article = selected_article_filename
+                st.session_state.transformed_text = None
+                st.session_state.summary_text = None
+                st.session_state.entities = {}
+                st.session_state.sentiment_data = {}
+                st.session_state.topics_data = {}
+                st.session_state.related_articles = []
+                st.session_state.related_articles_response = ""
+            
             return load_article(selected_article_filename), selected_article_filename
         else:
             if len(filtered_metadata) == 0:
@@ -378,18 +401,33 @@ def show_text_transformation_tab(client, article_data, selected_article_filename
                     language=desired_language
                 )
                 transformed_text = get_llm_response(client, prompt)
-                st.markdown(transformed_text)
-                
-                # Add download button for transformed text
-                st.download_button(
-                    label="Download transformed text",
-                    data=transformed_text,
-                    file_name=f"transformed_{selected_article_filename.replace('.json', '')}_{desired_language.lower()}.txt",
-                    mime="text/plain"
-                )
+                # Store in session state for persistence
+                st.session_state.transformed_text = transformed_text
+                st.session_state.transformed_type = transformation_type
+                st.session_state.transformed_level = level
+                st.session_state.transformed_language = desired_language
             except Exception as e:
                 st.error(f"Error transforming text: {e}")
                 st.session_state.api_error = True
+    
+    # Display the transformed text if it exists in session state
+    if st.session_state.transformed_text:
+        st.markdown(st.session_state.transformed_text)
+        
+        # Add download button for transformed text
+        st.download_button(
+            label="Download transformed text",
+            data=st.session_state.transformed_text,
+            file_name=f"transformed_{selected_article_filename.replace('.json', '')}_{desired_language.lower()}.txt",
+            mime="text/plain"
+        )
+        
+        # Display transformation details for clarity
+        if 'transformed_type' in st.session_state:
+            type_str = f"**Type**: {st.session_state.transformed_type.capitalize()}"
+            level_str = f" | **Level**: {st.session_state.transformed_level}" if st.session_state.transformed_level else ""
+            lang_str = f" | **Language**: {st.session_state.transformed_language}"
+            st.caption(f"{type_str}{level_str}{lang_str}")
 
 def show_summarization_tab(client, article_data, selected_article_filename, desired_language):
     """Display the summarization features tab with language support."""
@@ -414,18 +452,33 @@ def show_summarization_tab(client, article_data, selected_article_filename, desi
                     language=desired_language
                 )
                 summary = get_llm_response(client, prompt)
-                st.markdown(summary)
-                
-                # Add download button for summary
-                st.download_button(
-                    label="Download summary",
-                    data=summary,
-                    file_name=f"summary_{selected_article_filename.replace('.json', '')}_{desired_language.lower()}.txt",
-                    mime="text/plain"
-                )
+                # Store in session state for persistence
+                st.session_state.summary_text = summary
+                st.session_state.summary_type = summary_type
+                st.session_state.summary_length = length
+                st.session_state.summary_language = desired_language
             except Exception as e:
                 st.error(f"Error generating summary: {e}")
                 st.session_state.api_error = True
+    
+    # Display the summary if it exists in session state
+    if st.session_state.summary_text:
+        st.markdown(st.session_state.summary_text)
+        
+        # Add download button for summary
+        st.download_button(
+            label="Download summary",
+            data=st.session_state.summary_text,
+            file_name=f"summary_{selected_article_filename.replace('.json', '')}_{desired_language.lower()}.txt",
+            mime="text/plain"
+        )
+        
+        # Display summary details for clarity
+        if 'summary_type' in st.session_state:
+            type_str = f"**Type**: {st.session_state.summary_type.replace('-', ' ').capitalize()}"
+            length_str = f" | **Length**: {st.session_state.summary_length} paragraphs" if st.session_state.summary_length else ""
+            lang_str = f" | **Language**: {st.session_state.summary_language}"
+            st.caption(f"{type_str}{length_str}{lang_str}")
 
 # --- ANALYSIS FUNCTIONS ---
 def extract_entities(client, article_text):
@@ -509,7 +562,7 @@ def identify_main_topics(client, article_text):
         "main_topic": "The primary subject of the article",
         "subtopics": ["Subtopic 1", "Subtopic 2", ...],
         "keywords": ["Keyword 1", "Keyword 2", ...],
-        "categories": ["Category 1", "Category 2", ..."],
+        "categories": ["Category 1", "Category 2", ...],
         "summary": "A brief 1-2 sentence summary of the main point"
     }}
     
