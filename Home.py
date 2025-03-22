@@ -111,7 +111,6 @@ def get_llm_response(client, prompt, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX
         return "Sorry, I encountered an error while processing your request. Please check the API configuration."
 
 # --- PROMPT TEMPLATES ---
-# --- UPDATED PROMPT TEMPLATES ---
 def create_transformation_prompt(article_text, transformation_type, level=None, language="English"):
     """Create a prompt for text transformation based on the selected type, level, and language."""
     language_instruction = f"Write your response in {language}."
@@ -449,7 +448,7 @@ def main():
     # Main content area title and language selection
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.title("SARA: Wiener Zeitung Archive Analysis")
+        st.title("SARA: Text Transformation & Summarization")
     with col2:
         # Put language selection in a more prominent position
         desired_language = st.selectbox(
