@@ -89,6 +89,10 @@ def initialize_app():
     if 'related_articles_response' not in st.session_state:
         st.session_state.related_articles_response = ""
     
+    # Initialize saved articles
+    if 'saved_articles' not in st.session_state:
+        st.session_state.saved_articles = {}
+    
     return client
 
 # --- DATA HANDLING FUNCTIONS ---
@@ -892,6 +896,45 @@ def show_related_tab(client, article_data, metadata_df, desired_language):
                 st.error(f"Error finding related articles: {e}")
                 st.session_state.api_error = True
 
+def toggle_save_article(article_data, selected_article_filename):
+    """Toggle saving/unsaving an article."""
+    if selected_article_filename in st.session_state.saved_articles:
+        del st.session_state.saved_articles[selected_article_filename]
+        return False
+    else:
+        st.session_state.saved_articles[selected_article_filename] = {
+            'title': article_data['title'],
+            'author': article_data['author'],
+            'published_at': article_data['published_at'],
+            'category': article_data['category'],
+            'section': article_data['section']
+        }
+        return True
+
+def show_saved_articles_tab():
+    """Display the saved articles tab."""
+    st.subheader("Saved Articles")
+    
+    if not st.session_state.saved_articles:
+        st.info("No saved articles yet. Articles you save will appear here.")
+        return
+    
+    # Display saved articles in a grid
+    for filename, article_info in st.session_state.saved_articles.items():
+        with st.expander(f"{article_info['title']} - {article_info['published_at']}"):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**Author:** {article_info['author']}")
+                st.markdown(f"**Category:** {article_info['category']}")
+                st.markdown(f"**Section:** {article_info['section']}")
+            
+            with col2:
+                if st.button("Load Article", key=f"load_{filename}"):
+                    st.session_state.current_article = filename
+                    st.rerun()
+                if st.button("Remove from Saved", key=f"remove_{filename}"):
+                    del st.session_state.saved_articles[filename]
+                    st.rerun()
 
 # --- MAIN APP FUNCTION ---
 def main():
@@ -923,11 +966,21 @@ def main():
     
     # If we have an article selected, display it and feature tabs
     if article_data:
+        # Add save button at the top
+        is_saved = selected_article_filename in st.session_state.saved_articles
+        save_button_text = "Remove from Saved" if is_saved else "Save for Later"
+        if st.button(save_button_text, key="save_button"):
+            if toggle_save_article(article_data, selected_article_filename):
+                st.success("Article saved!")
+            else:
+                st.info("Article removed from saved items")
+            st.rerun()
+        
         # Display language indicator
         display_language_indicator(desired_language)
         
         # Feature tabs
-        tabs = st.tabs(["Style", "Summarize", "Entities", "Sentiment", "Topic", "Related"])
+        tabs = st.tabs(["Style", "Summarize", "Entities", "Sentiment", "Topic", "Related", "Saved"])
         
         # Text Transformation features - pass the desired language
         with tabs[0]:
@@ -974,7 +1027,10 @@ def main():
                 show_related_tab(client, article_data, load_metadata(), desired_language)
             else:
                 st.error("Only available if Filter to Demo Articles is selected")
-            
+        
+        # Saved Articles tab
+        with tabs[6]:
+            show_saved_articles_tab()
             
         # Display original article
         display_article(article_data)
